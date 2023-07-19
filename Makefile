@@ -6,7 +6,7 @@ TMVERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::'
 COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
 BINDIR ?= $(GOPATH)/bin
-EVMOS_BINARY = evmosd
+EVMOS_BINARY = umCloverd
 EVMOS_DIR = evmos
 BUILDDIR ?= $(CURDIR)/build
 HTTPS_GIT := https://github.com/evmos/evmos.git
@@ -119,13 +119,12 @@ endif
 
 BUILD_TARGETS := build install
 
-build: BUILD_ARGS=-o $(BUILDDIR)/
+build: BUILD_ARGS=-o $(BUILDDIR)/umCloverd
 build-linux:
 	GOOS=linux GOARCH=amd64 LEDGER_ENABLED=false $(MAKE) build
 
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	go $@ $(BUILD_FLAGS) $(BUILD_ARGS) ./...
-
+	go $@ $(BUILD_FLAGS) $(BUILD_ARGS) $(CURDIR)/cmd/evmosd
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
 
