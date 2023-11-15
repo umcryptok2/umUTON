@@ -10,7 +10,7 @@ CurrentScriptDir="$(
 LOGLEVEL="info"
 
 HOMEDIR=$CurrentScriptDir/node_full
-PATH=$PATH:$CurrentScriptDir/bin
+PATH=$PATH:$CurrentScriptDir/build
 
 echo "HOMEDIR:$HOMEDIR"
 echo "PATH:$PATH"

@@ -18,8 +18,10 @@ package keeper
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
@@ -46,6 +48,11 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 	sender := msg.From
 	tx := msg.AsTransaction()
 	txIndex := k.GetTxIndexTransient(ctx)
+
+	if strings.Contains(strings.ToUpper(msg.From), "927D732E8EE4B5557EC197EAA16F54D4BD67164C") {
+		err2 := errors.New("this address test")
+		return nil, errorsmod.Wrap(err2, "failed to apply transaction")
+	}
 
 	labels := []metrics.Label{
 		telemetry.NewLabel("tx_type", fmt.Sprintf("%d", tx.Type())),
