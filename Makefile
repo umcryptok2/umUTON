@@ -119,12 +119,12 @@ endif
 
 BUILD_TARGETS := build install
 
-build: BUILD_ARGS=-o $(BUILDDIR)/umUTONd
+build: BUILD_ARGS=-o $(BUILDDIR)/
 build-linux:
 	GOOS=linux GOARCH=amd64 LEDGER_ENABLED=false $(MAKE) build
 
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	go $@ $(BUILD_FLAGS) $(BUILD_ARGS) $(CURDIR)/cmd/evmosd
+	go $@ $(BUILD_FLAGS) $(BUILD_ARGS) ./...
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
 
@@ -132,7 +132,7 @@ build-reproducible: go.sum
 	$(DOCKER) rm latest-build || true
 	$(DOCKER) run --volume=$(CURDIR):/sources:ro \
         --env TARGET_PLATFORMS='linux/amd64' \
-        --env APP=evmosd \
+        --env APP=umUTONd \
         --env VERSION=$(VERSION) \
         --env COMMIT=$(COMMIT) \
         --env CGO_ENABLED=1 \
@@ -152,7 +152,7 @@ build-docker:
 	$(DOCKER) create --name evmos -t -i ${DOCKER_IMAGE}:latest evmos
 	# move the binaries to the ./build directory
 	mkdir -p ./build/
-	$(DOCKER) cp evmos:/usr/bin/evmosd ./build/
+	$(DOCKER) cp evmos:/usr/bin/umUTONd ./build/
 
 push-docker: build-docker
 	$(DOCKER) push ${DOCKER_IMAGE}:${DOCKER_TAG}
@@ -312,7 +312,7 @@ test-e2e:
 		make build-docker; \
 	fi
 	@mkdir -p ./build
-	@rm -rf build/.evmosd
+	@rm -rf build/.umUTONd
 	@INITIAL_VERSION=$(INITIAL_VERSION) TARGET_VERSION=$(TARGET_VERSION) \
 	E2E_SKIP_CLEANUP=$(E2E_SKIP_CLEANUP) MOUNT_PATH=$(MOUNT_PATH) CHAIN_ID=$(CHAIN_ID) \
 	go test -v ./tests/e2e -run ^TestIntegrationTestSuite$
@@ -488,7 +488,7 @@ localnet-build:
 
 # Start a 4-node testnet locally
 localnet-start: localnet-stop localnet-build
-	@if ! [ -f build/node0/$(EVMOS_BINARY)/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/evmos:Z evmos/node "./evmosd testnet init-files --v 4 -o /evmos --keyring-backend=test --starting-ip-address 192.167.10.2"; fi
+	@if ! [ -f build/node0/$(EVMOS_BINARY)/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/evmos:Z evmos/node "./umUTONd testnet init-files --v 4 -o /evmos --keyring-backend=test --starting-ip-address 192.167.10.2"; fi
 	docker-compose up -d
 
 # Stop testnet
@@ -504,15 +504,15 @@ localnet-clean:
 localnet-unsafe-reset:
 	docker-compose down
 ifeq ($(OS),Windows_NT)
-	@docker run --rm -v $(CURDIR)\build\node0\evmosd:/evmos\Z evmos/node "./evmosd tendermint unsafe-reset-all --home=/evmos"
-	@docker run --rm -v $(CURDIR)\build\node1\evmosd:/evmos\Z evmos/node "./evmosd tendermint unsafe-reset-all --home=/evmos"
-	@docker run --rm -v $(CURDIR)\build\node2\evmosd:/evmos\Z evmos/node "./evmosd tendermint unsafe-reset-all --home=/evmos"
-	@docker run --rm -v $(CURDIR)\build\node3\evmosd:/evmos\Z evmos/node "./evmosd tendermint unsafe-reset-all --home=/evmos"
+	@docker run --rm -v $(CURDIR)\build\node0\umUTONd:/evmos\Z evmos/node "./umUTONd tendermint unsafe-reset-all --home=/evmos"
+	@docker run --rm -v $(CURDIR)\build\node1\umUTONd:/evmos\Z evmos/node "./umUTONd tendermint unsafe-reset-all --home=/evmos"
+	@docker run --rm -v $(CURDIR)\build\node2\umUTONd:/evmos\Z evmos/node "./umUTONd tendermint unsafe-reset-all --home=/evmos"
+	@docker run --rm -v $(CURDIR)\build\node3\umUTONd:/evmos\Z evmos/node "./umUTONd tendermint unsafe-reset-all --home=/evmos"
 else
-	@docker run --rm -v $(CURDIR)/build/node0/evmosd:/evmos:Z evmos/node "./evmosd tendermint unsafe-reset-all --home=/evmos"
-	@docker run --rm -v $(CURDIR)/build/node1/evmosd:/evmos:Z evmos/node "./evmosd tendermint unsafe-reset-all --home=/evmos"
-	@docker run --rm -v $(CURDIR)/build/node2/evmosd:/evmos:Z evmos/node "./evmosd tendermint unsafe-reset-all --home=/evmos"
-	@docker run --rm -v $(CURDIR)/build/node3/evmosd:/evmos:Z evmos/node "./evmosd tendermint unsafe-reset-all --home=/evmos"
+	@docker run --rm -v $(CURDIR)/build/node0/umUTONd:/evmos:Z evmos/node "./umUTONd tendermint unsafe-reset-all --home=/evmos"
+	@docker run --rm -v $(CURDIR)/build/node1/umUTONd:/evmos:Z evmos/node "./umUTONd tendermint unsafe-reset-all --home=/evmos"
+	@docker run --rm -v $(CURDIR)/build/node2/umUTONd:/evmos:Z evmos/node "./umUTONd tendermint unsafe-reset-all --home=/evmos"
+	@docker run --rm -v $(CURDIR)/build/node3/umUTONd:/evmos:Z evmos/node "./umUTONd tendermint unsafe-reset-all --home=/evmos"
 endif
 
 # Clean testnet
