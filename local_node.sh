@@ -3,7 +3,7 @@
 KEYS[0]="dev0"
 KEYS[1]="dev1"
 KEYS[2]="dev2"
-CHAINID="evmos_9000-1"
+CHAINID="clover_9000-1"
 MONIKER="localtestnet"
 # Remember to change to other types of keyring like 'file' in-case exposing to outside world,
 # otherwise your balance will be wiped quickly
@@ -11,8 +11,9 @@ MONIKER="localtestnet"
 KEYRING="test"
 KEYALGO="eth_secp256k1"
 LOGLEVEL="info"
-# Set dedicated home directory for the evmosd instance
-HOMEDIR="$HOME/.tmp-evmosd"
+# Set dedicated home directory for the umUTONd instance
+# HOMEDIR="$HOME/.tmp-umUTONd"
+HOMEDIR="./build/.umUTONd"
 # to trace evm
 #TRACE="--trace"
 TRACE=""
@@ -51,23 +52,23 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
 	rm -rf "$HOMEDIR"
 
 	# Set client config
-	evmosd config keyring-backend $KEYRING --home "$HOMEDIR"
-	evmosd config chain-id $CHAINID --home "$HOMEDIR"
+	umUTONd config keyring-backend $KEYRING --home "$HOMEDIR"
+	umUTONd config chain-id $CHAINID --home "$HOMEDIR"
 
 	# If keys exist they should be deleted
 	for KEY in "${KEYS[@]}"; do
-		evmosd keys add "$KEY" --keyring-backend $KEYRING --algo $KEYALGO --home "$HOMEDIR"
+		umUTONd keys add "$KEY" --keyring-backend $KEYRING --algo $KEYALGO --home "$HOMEDIR"
 	done
 
 	# Set moniker and chain-id for Evmos (Moniker can be anything, chain-id must be an integer)
-	evmosd init $MONIKER -o --chain-id $CHAINID --home "$HOMEDIR"
+	umUTONd init $MONIKER -o --chain-id $CHAINID --home "$HOMEDIR"
 
-	# Change parameter token denominations to aevmos
-	jq '.app_state["staking"]["params"]["bond_denom"]="aevmos"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-	jq '.app_state["crisis"]["constant_fee"]["denom"]="aevmos"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-	jq '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="aevmos"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-	jq '.app_state["evm"]["params"]["evm_denom"]="aevmos"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
-	jq '.app_state["inflation"]["params"]["mint_denom"]="aevmos"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+	# Change parameter token denominations to autn
+	jq '.app_state["staking"]["params"]["bond_denom"]="autn"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+	jq '.app_state["crisis"]["constant_fee"]["denom"]="autn"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+	jq '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="autn"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+	jq '.app_state["evm"]["params"]["evm_denom"]="autn"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+	jq '.app_state["inflation"]["params"]["mint_denom"]="autn"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
 
 	# Set gas limit in genesis
 	jq '.consensus_params["block"]["max_gas"]="10000000"' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
@@ -79,16 +80,16 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
 	# Set claims records for validator account
 	amount_to_claim=10000
 	claims_key=${KEYS[0]}
-	node_address=$(evmosd keys show "$claims_key" --keyring-backend $KEYRING --home "$HOMEDIR" | grep "address" | cut -c12-)
+	node_address=$(umUTONd keys show "$claims_key" --keyring-backend $KEYRING --home "$HOMEDIR" | grep "address" | cut -c12-)
 	jq -r --arg node_address "$node_address" --arg amount_to_claim "$amount_to_claim" '.app_state["claims"]["claims_records"]=[{"initial_claimable_amount":$amount_to_claim, "actions_completed":[false, false, false, false],"address":$node_address}]' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
 
 	# Set claims decay
 	jq '.app_state["claims"]["params"]["duration_of_decay"]="1000000s"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
 	jq '.app_state["claims"]["params"]["duration_until_decay"]="100000s"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+	jq '.app_state["claims"]["params"]["claims_denom"]="autn"' >"$TMP_GENESIS" "$GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
 
 	# Claim module account:
-	# 0xA61808Fe40fEb8B3433778BBC2ecECCAA47c8c47 || evmos15cvq3ljql6utxseh0zau9m8ve2j8erz89m5wkz
-	jq -r --arg amount_to_claim "$amount_to_claim" '.app_state["bank"]["balances"] += [{"address":"evmos15cvq3ljql6utxseh0zau9m8ve2j8erz89m5wkz","coins":[{"denom":"aevmos", "amount":$amount_to_claim}]}]' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
+	jq -r --arg amount_to_claim "$amount_to_claim" '.app_state["bank"]["balances"] += [{"address":"um15cvq3ljql6utxseh0zau9m8ve2j8erz8rc9w5w","coins":[{"denom":"autn", "amount":$amount_to_claim}]}]' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
 
 	if [[ $1 == "pending" ]]; then
 		if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -134,7 +135,7 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
 
 	# Allocate genesis accounts (cosmos formatted addresses)
 	for KEY in "${KEYS[@]}"; do
-		evmosd add-genesis-account "$KEY" 100000000000000000000000000aevmos --keyring-backend $KEYRING --home "$HOMEDIR"
+		umUTONd add-genesis-account "$KEY" 100000000000000000000000000autn --keyring-backend $KEYRING --home "$HOMEDIR"
 	done
 
 	# bc is required to add these big numbers
@@ -142,19 +143,19 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
 	jq -r --arg total_supply "$total_supply" '.app_state["bank"]["supply"][0]["amount"]=$total_supply' "$GENESIS" >"$TMP_GENESIS" && mv "$TMP_GENESIS" "$GENESIS"
 
 	# Sign genesis transaction
-	evmosd gentx "${KEYS[0]}" 1000000000000000000000aevmos --keyring-backend $KEYRING --chain-id $CHAINID --home "$HOMEDIR"
+	umUTONd gentx "${KEYS[0]}" 1000000000000000000000autn --keyring-backend $KEYRING --chain-id $CHAINID --home "$HOMEDIR"
 	## In case you want to create multiple validators at genesis
-	## 1. Back to `evmosd keys add` step, init more keys
-	## 2. Back to `evmosd add-genesis-account` step, add balance for those
-	## 3. Clone this ~/.evmosd home directory into some others, let's say `~/.clonedEvmosd`
+	## 1. Back to `umUTONd keys add` step, init more keys
+	## 2. Back to `umUTONd add-genesis-account` step, add balance for those
+	## 3. Clone this ~/.umUTONd home directory into some others, let's say `~/.clonedumUTONd`
 	## 4. Run `gentx` in each of those folders
-	## 5. Copy the `gentx-*` folders under `~/.clonedEvmosd/config/gentx/` folders into the original `~/.evmosd/config/gentx`
+	## 5. Copy the `gentx-*` folders under `~/.clonedumUTONd/config/gentx/` folders into the original `~/.umUTONd/config/gentx`
 
 	# Collect genesis tx
-	evmosd collect-gentxs --home "$HOMEDIR"
+	umUTONd collect-gentxs --home "$HOMEDIR"
 
 	# Run this to ensure everything worked and that the genesis file is setup correctly
-	evmosd validate-genesis --home "$HOMEDIR"
+	umUTONd validate-genesis --home "$HOMEDIR"
 
 	if [[ $1 == "pending" ]]; then
 		echo "pending mode is on, please wait for the first block committed."
@@ -162,4 +163,4 @@ if [[ $overwrite == "y" || $overwrite == "Y" ]]; then
 fi
 
 # Start the node (remove the --pruning=nothing flag if historical queries are not needed)
-evmosd start --metrics "$TRACE" --log_level $LOGLEVEL --minimum-gas-prices=0.0001aevmos --json-rpc.api eth,txpool,personal,net,debug,web3 --api.enable --home "$HOMEDIR"
+umUTONd start --metrics "$TRACE" --log_level $LOGLEVEL --minimum-gas-prices=0.0001autn --json-rpc.api eth,txpool,personal,net,debug,web3 --api.enable --home "$HOMEDIR"
